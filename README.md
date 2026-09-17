@@ -105,6 +105,24 @@ logs, machine identity, and credentials are deliberately excluded.
 Upstream: `dcf-valuation-governance` v1.0.1. `SECURITY.md` and the disclosure boundary are
 carried over unchanged.
 
+## Web app (mobile valuation screener)
+
+`web/dcf-sherry-web.html` is a single-file, zero-dependency web tool. Enter a stock code or name
+and it runs the three layers (triage → reverse-DCF pricing → growth-quality gates). Open it in any
+phone browser — no install, no build.
+
+- Quotes come from Tencent's public quote interface (browser-side JSONP; needs network, won't work offline).
+- A built-in table of 5,571 A-share codes and names (a build-time snapshot) powers name search;
+  code entry is always authoritative.
+- Default WACC / growth / ROIC / duration are editable under "高级参数" (advanced). They are
+  defaults, not real financials — for a rigorous valuation run `scripts/dcf_cli.py` locally.
+- Shareable raw link:
+  `https://raw.githubusercontent.com/SherryCW/dcf-sherry/main/web/dcf-sherry-web.html`
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ## Disclaimer
 
 Educational and research use only. Nothing here is investment advice, a recommendation, or a
