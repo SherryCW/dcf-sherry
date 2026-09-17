@@ -300,6 +300,8 @@ function render(f){
   if(flags.length===0) flags.push(["g","未见明显倍数红旗。"]);
 
   // ---- 第二层：反向 DCF ----
+  // 顶部结论卡要复用这些结果，先提到外层作用域
+  let topVerdict=null, topVcls="", gImpTop=null, gapTop=null, sustainableTop=null, durTop=null, topCapped=false, topFloored=false;
   let layer1Html;
   if(!(eps>0)){ layer1Html = `<div class="verdict">亏损股无法以盈利为基数做反向 DCF，请改用 PB 或正常化盈利口径。</div>`; }
   else{
@@ -321,6 +323,8 @@ function render(f){
       if(dur!==Infinity && dur>p.n) extra.push("按中性增速外推，现价需要再撑 <b>"+dur.toFixed(1)+" 年</b>，超过你设定的优势久期 "+p.n+" 年。");
       else if(dur!==Infinity) extra.push("按中性增速外推，现价只需再撑 <b>"+dur.toFixed(1)+" 年</b>，落在 "+p.n+" 年久期内。");
     }
+    topVerdict=verdict; topVcls=vcls; gImpTop=gImp; gapTop=gap; sustainableTop=sustainable;
+    durTop=dur; topCapped=!!imp.capped; topFloored=!!imp.floored;
     layer1Html = `
       <div class="kv"><span class="k">现价隐含增长率</span><span class="v">${imp.capped?"&gt;100%":imp.floored?"&lt;-50%":pct(gImp)}</span></div>
       <div class="kv"><span class="k">你的前瞻共识（中性）</span><span class="v">${pct(p.gBase)}</span></div>
@@ -359,6 +363,30 @@ function render(f){
   // ---- 组装 ----
   const advOpen = state.advancedOpen ? "open" : "";
   out.innerHTML = `
+  ${topVerdict?`
+  <div class="card" style="border-left:5px solid var(--accent)">
+    <div style="font-size:11px;color:var(--muted);letter-spacing:3px;margin-bottom:6px">估值结论</div>
+    <div style="font-size:20px;font-weight:800;line-height:1.35;margin-bottom:12px">${topVerdict}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <span class="pill ${topVcls}">现价 ${f2(price)}</span>
+      <span class="pill ${clsCls}">${clsLabel}</span>
+      <span class="pill" style="background:var(--accent-soft)">隐含增长 ${topCapped?"&gt;100%":topFloored?"&lt;-50%":pct(gImpTop)}</span>
+      <span class="pill" style="background:var(--accent-soft)">共识 ${pct(p.gBase)}</span>
+      <span class="pill" style="background:var(--accent-soft)">差 ${gapTop==null?"—":(gapTop>=0?"+":"")+pct(gapTop)}</span>
+      <span class="pill" style="background:var(--accent-soft)">PEG ${peg(p.gBase)==null?"—":f2(peg(p.gBase))}</span>
+    </div>
+  </div>`:`
+  <div class="card" style="border-left:5px solid var(--accent)">
+    <div style="font-size:11px;color:var(--muted);letter-spacing:3px;margin-bottom:6px">估值结论</div>
+    <div style="font-size:18px;font-weight:800;line-height:1.35;margin-bottom:10px">亏损股：无法用盈利口径做反向 DCF</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <span class="pill ${clsCls}">${clsLabel}</span>
+      <span class="pill" style="background:var(--accent-soft)">现价 ${f2(price)}</span>
+      <span class="pill" style="background:var(--accent-soft)">PE ${f2(peTTM)}</span>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-top:10px">改用 PB 或正常化盈利口径。</div>
+  </div>`}
+
   <div class="card">
     <div class="name-big">${name||"—"}</div>
     <div class="code-muted">${code||""} · ${f[I.time]? f[I.time].replace(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,"$1-$2-$3 $4:$5").slice(0,16):""}</div>
