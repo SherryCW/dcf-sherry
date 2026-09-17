@@ -396,6 +396,7 @@ function render(f){
       <div style="font-size:20px;font-weight:800;color:${ivGapPct>0?'var(--up)':'var(--down)'}">中性 ${f2(ivBase)} 元　${ivGapPct>0?'现价贵 '+f2(ivGapPct)+'%':'现价低 '+f2(Math.abs(ivGapPct))+'%'}</div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px">悲观 ${f2(ivBear)} ｜ 中性 ${f2(ivBase)} ｜ 乐观 ${f2(ivBull)} ｜ 加权 ${f2(ivWeighted)} 元/股</div>
       ${(gapTop!=null && Math.abs(gapTop)>0.15)?`<div style="font-size:12px;color:var(--up);margin-top:8px;line-height:1.5">⚠ 你的中性假设 ${pct(p.gBase)} 与市场隐含 ${pct(gImpTop)} 相差 ${(gapTop>=0?'+':'')+pct(gapTop)}：内在价值对增速极端敏感，这个"贵/便宜"基本由假设决定，不是客观结论。</div>`:""}
+      ${peTTM>100?`<div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">注：PE(TTM) ${f2(peTTM)} 属微利/极端高估状态，当前 EPS 是低基数。这类公司的真实驱动是「营收增长 × 利润率扩张」，单一 EPS 增速只能近似——本页仅作量级参考，请以完整 FCFF 模型为准。</div>`:""}
       <button onclick="__useImplied()" style="margin-top:9px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer">用市场隐含增速 ${topCapped?"&gt;100%":topFloored?"&lt;-50%":pct(gImpTop)} 试算 →</button>
     </div>`:""}
     <div style="display:flex;flex-wrap:wrap;gap:8px">
