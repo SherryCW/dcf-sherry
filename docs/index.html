@@ -362,7 +362,7 @@ function render(f){
   <div class="card">
     <div class="name-big">${name||"—"}</div>
     <div class="code-muted">${code||""} · ${f[I.time]? f[I.time].replace(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,"$1-$2-$3 $4:$5").slice(0,16):""}</div>
-    <div class="price-big ${upcls}">${f2(price)} <span style="font-size:16px">${arrow} ${pct(chg)}</span></div>
+    <div class="price-big ${upcls}">${f2(price)} <span style="font-size:16px">${arrow} ${f2(chg)}%</span></div>
     <div class="stat-row" style="margin-top:14px">
       <div class="stat"><span class="k">PE(TTM)</span><span class="v">${f2(peTTM)}</span></div>
       <div class="stat"><span class="k">市净率</span><span class="v">${f2(pb)}</span></div>
