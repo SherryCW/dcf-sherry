@@ -202,7 +202,12 @@ async function fetchQuote(code){
       const m = txt && txt.match(/v_\w+="([^"]*)"/);
       if(!m || !m[1]) throw new Error("无行情数据（接口未返回）");
       const f = m[1].split("~");
-      if(f.length < 45) throw new Error("行情数据不完整");
+      // 放宽：只要还能拿到名称或现价就继续渲染，缺的指标显示 "—"，
+      // 不因为部分字段缺失就让整页挂掉。彻底拿不到才报错，并附诊断片段。
+      if(f.length < 10 || (!f[1] && !f[3])){
+        const sample = (m[1]||"").slice(0,120).replace(/[<>]/g,"");
+        throw new Error("行情数据不完整（仅 "+f.length+" 个字段）。原始片段："+sample);
+      }
       return f;
     }catch(e){
       lastErr = e;
