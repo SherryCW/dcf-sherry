@@ -160,7 +160,8 @@ function normalizeCode(raw){
   if(!s) return null;
   if(/^[a-z]{2}\d{6}$/.test(s)) return s;          // 已是 sh600141 / sz000001 / bj...
   if(/^\d{6}$/.test(s)){
-    if(s[0]==="6"||s[0]==="9") return "sh"+s;
+    if(s[0]==="6") return "sh"+s;
+    if(s[0]==="9") return /^92/.test(s) ? "bj"+s : "sh"+s; // 920xxx 北交所；900xxx 沪B
     if(s[0]==="0"||s[0]==="3") return "sz"+s;
     if(s[0]==="4"||s[0]==="8") return "bj"+s;
     return "sh"+s;
@@ -199,6 +200,10 @@ async function fetchQuote(code){
       let txt;
       try{ txt = new TextDecoder("gbk").decode(buf); }
       catch(e){ txt = new TextDecoder("gb18030").decode(buf); }
+      // 腾讯对查不到的代码返回 v_pv_none_match="1"（仅 1 个字段）。
+      // 正则 v_\w+ 会把它也匹配上，于是"查无此股"被误报成"数据不完整"，
+      // 必须优先识别，否则真正的原因被掩盖。
+      if(/pv_none_match/.test(txt||"")) throw new Error("代码 "+code+" 查无行情：该代码不存在、已退市，或前缀识别有误（请核对是否为 A 股 6 位代码）");
       const m = txt && txt.match(/v_\w+="([^"]*)"/);
       if(!m || !m[1]) throw new Error("无行情数据（接口未返回）");
       const f = m[1].split("~");
@@ -478,9 +483,12 @@ async function run(raw){
 
 async function loadAndRender(code){
   window.__lastQ = code;
-  const f = await fetchQuote(code);
+  // 内置名称表里的代码不带市场前缀（如 688256），但行情接口必须带前缀（sh688256）。
+  // 缺前缀会被接口判为查无此股，返回 v_pv_none_match="1"，所以这里统一补全。
+  const full = normalizeCode(code) || code;
+  const f = await fetchQuote(full);
   window.__peTTM = +f[I.peTTM];
-  const box = $("#q"); if(box) box.value = code.replace(/^[a-z]{2}/,"");
+  const box = $("#q"); if(box) box.value = full.replace(/^[a-z]{2}/,"");
   render(f);
 }
 
