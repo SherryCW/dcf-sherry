@@ -265,6 +265,16 @@ function renderError(msg){ out.innerHTML = '<div class="card"><div class="err">�
   '<br><br>排查：①手机需联网；②微信内打开可能拦截行情脚本，请用手机自带浏览器（Safari / Chrome）打开本页；③点下方按钮重试。'+
   '<br><br><button class="retry-btn" onclick="__retry()">重试</button></div></div>'; }
 function __retry(){ if(window.__lastQ) loadAndRender(window.__lastQ); else document.querySelector("#go").click(); }
+// 一键把三档前瞻增速设为「市场隐含增速」附近，让用户看到"若按市场预期，值多少钱"
+function __useImplied(){
+  const g = window.__lastImp;
+  if(g==null || !(g>0) || !window.__lastF) return;
+  const base = Math.max(0.01, Math.min(0.9, g));
+  state.params.gBase = base;
+  state.params.gBear = Math.max(0.01, base*0.7);
+  state.params.gBull = Math.min(1.2, base*1.3);
+  render(window.__lastF);
+}
 
 function render(f){
   const p = {...state.params};
@@ -325,6 +335,7 @@ function render(f){
     }
     topVerdict=verdict; topVcls=vcls; gImpTop=gImp; gapTop=gap; sustainableTop=sustainable;
     durTop=dur; topCapped=!!imp.capped; topFloored=!!imp.floored;
+    window.__lastImp = isFinite(gImp) ? gImp : null;
     layer1Html = `
       <div class="kv"><span class="k">现价隐含增长率</span><span class="v">${imp.capped?"&gt;100%":imp.floored?"&lt;-50%":pct(gImp)}</span></div>
       <div class="kv"><span class="k">你的前瞻共识（中性）</span><span class="v">${pct(p.gBase)}</span></div>
@@ -384,6 +395,8 @@ function render(f){
       <div style="font-size:12px;color:var(--muted);margin-bottom:5px">简化 DCF 速算（EPS 基数 · 现行参数 · 非严谨估值）</div>
       <div style="font-size:20px;font-weight:800;color:${ivGapPct>0?'var(--up)':'var(--down)'}">中性 ${f2(ivBase)} 元　${ivGapPct>0?'现价贵 '+f2(ivGapPct)+'%':'现价低 '+f2(Math.abs(ivGapPct))+'%'}</div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px">悲观 ${f2(ivBear)} ｜ 中性 ${f2(ivBase)} ｜ 乐观 ${f2(ivBull)} ｜ 加权 ${f2(ivWeighted)} 元/股</div>
+      ${(gapTop!=null && Math.abs(gapTop)>0.15)?`<div style="font-size:12px;color:var(--up);margin-top:8px;line-height:1.5">⚠ 你的中性假设 ${pct(p.gBase)} 与市场隐含 ${pct(gImpTop)} 相差 ${(gapTop>=0?'+':'')+pct(gapTop)}：内在价值对增速极端敏感，这个"贵/便宜"基本由假设决定，不是客观结论。</div>`:""}
+      <button onclick="__useImplied()" style="margin-top:9px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer">用市场隐含增速 ${topCapped?"&gt;100%":topFloored?"&lt;-50%":pct(gImpTop)} 试算 →</button>
     </div>`:""}
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       <span class="pill ${topVcls}">现价 ${f2(price)}</span>
@@ -533,6 +546,7 @@ async function loadAndRender(code){
   // 缺前缀会被接口判为查无此股，返回 v_pv_none_match="1"，所以这里统一补全。
   const full = normalizeCode(code) || code;
   const f = await fetchQuote(full);
+  window.__lastF = f;
   window.__peTTM = +f[I.peTTM];
   const box = $("#q"); if(box) box.value = full.replace(/^[a-z]{2}/,"");
   render(f);
