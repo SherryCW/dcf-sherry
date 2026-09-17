@@ -1,0 +1,33 @@
+{
+  "case_id": "synthetic-cyclical-screen-001",
+  "company_name": "Synthetic Materials Co. (Cyclical Rebound)",
+  "as_of": "2026-09-17",
+  "currency": "CNY",
+  "price": 30.0,
+  "trailing_eps": 0.5,
+  "forward_eps": { "bear": 0.7, "base": 1.0, "bull": 1.4 },
+  "forward_growth_horizon_years": 1,
+  "historical_eps_cagr": { "low": 0.02, "high": 0.09, "years": 5 },
+  "high_growth_years": 2,
+  "quality_flags": {
+    "one_off_boost": false,
+    "mna_driven": false,
+    "leverage_driven": false,
+    "dilution_driven": false,
+    "cyclical": true,
+    "low_base": true
+  },
+  "quality_metrics": {
+    "roic": 0.11,
+    "wacc": 0.10,
+    "fcff_conversion": 0.62,
+    "net_debt_to_ebitda": 2.6,
+    "annual_dilution": 0.0
+  },
+  "sources": {
+    "forward_eps": "synthetic consensus aggregation, 2026-09-15",
+    "historical_eps_cagr": "synthetic annual reports FY2021-FY2025, includes a trough year",
+    "cyclical": "judgment: commodity spread cycle, trough year FY2025",
+    "roic": "synthetic FY2025 NOPAT / invested capital, trough earnings"
+  }
+}

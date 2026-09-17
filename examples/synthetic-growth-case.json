@@ -1,0 +1,59 @@
+{
+  "case_id": "synthetic-growth-case-001",
+  "company_name": "Synthetic Platform Co. (Synthetic)",
+  "valuation_date": "2026-09-17",
+  "currency": "CNY",
+  "per_share_currency": "CNY",
+  "bridge": {
+    "net_debt": 200.0,
+    "minority_interest": 0.0,
+    "non_operating_investments": 150.0,
+    "diluted_shares": 300.0
+  },
+  "growth_quality": {
+    "roic": 0.22,
+    "reinvestment_rate": 0.14,
+    "high_growth_years": 7,
+    "fcff_conversion": 0.72,
+    "net_debt_to_ebitda": 0.8,
+    "annual_dilution": 0.005
+  },
+  "scenarios": {
+    "bear": {
+      "probability": 0.25,
+      "wacc": 0.11,
+      "terminal_growth": 0.02,
+      "revenue": [770, 950, 1150, 1370, 1600, 1830, 2050],
+      "ebit_margin": [0.15, 0.162, 0.172, 0.18, 0.186, 0.19, 0.192],
+      "tax_rate": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15],
+      "da_pct_revenue": [0.035, 0.035, 0.035, 0.035, 0.035, 0.035, 0.035],
+      "capex_pct_revenue": [0.05, 0.05, 0.048, 0.046, 0.044, 0.042, 0.04],
+      "nwc_pct_revenue": [0.15, 0.148, 0.146, 0.143, 0.14, 0.137, 0.134],
+      "opening_nwc": 110.0
+    },
+    "base": {
+      "probability": 0.5,
+      "wacc": 0.095,
+      "terminal_growth": 0.03,
+      "revenue": [800, 1040, 1352, 1729, 2144, 2594, 3061],
+      "ebit_margin": [0.16, 0.18, 0.2, 0.215, 0.23, 0.24, 0.25],
+      "tax_rate": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15],
+      "da_pct_revenue": [0.035, 0.035, 0.035, 0.035, 0.035, 0.035, 0.035],
+      "capex_pct_revenue": [0.05, 0.05, 0.048, 0.046, 0.044, 0.042, 0.04],
+      "nwc_pct_revenue": [0.15, 0.148, 0.146, 0.143, 0.14, 0.137, 0.134],
+      "opening_nwc": 110.0
+    },
+    "bull": {
+      "probability": 0.25,
+      "wacc": 0.085,
+      "terminal_growth": 0.035,
+      "revenue": [840, 1142, 1530, 2014, 2580, 3225, 3935],
+      "ebit_margin": [0.165, 0.19, 0.215, 0.235, 0.25, 0.265, 0.275],
+      "tax_rate": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15],
+      "da_pct_revenue": [0.035, 0.035, 0.035, 0.035, 0.035, 0.035, 0.035],
+      "capex_pct_revenue": [0.05, 0.05, 0.048, 0.046, 0.044, 0.042, 0.04],
+      "nwc_pct_revenue": [0.15, 0.148, 0.146, 0.143, 0.14, 0.137, 0.134],
+      "opening_nwc": 110.0
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "case_id": "synthetic-growth-screen-001",
+  "company_name": "Synthetic Platform Co. (Structural Growth)",
+  "as_of": "2026-09-17",
+  "currency": "CNY",
+  "price": 100.0,
+  "trailing_eps": 2.0,
+  "forward_eps": { "bear": 2.6, "base": 3.0, "bull": 3.5 },
+  "forward_growth_horizon_years": 3,
+  "historical_eps_cagr": { "low": 0.18, "high": 0.32, "years": 5 },
+  "high_growth_years": 6,
+  "quality_flags": {
+    "one_off_boost": false,
+    "mna_driven": false,
+    "leverage_driven": false,
+    "dilution_driven": false,
+    "cyclical": false,
+    "low_base": false
+  },
+  "quality_metrics": {
+    "roic": 0.22,
+    "wacc": 0.09,
+    "fcff_conversion": 0.72,
+    "net_debt_to_ebitda": 0.8,
+    "annual_dilution": 0.005
+  },
+  "sources": {
+    "forward_eps": "synthetic consensus aggregation, 2026-09-15",
+    "historical_eps_cagr": "synthetic annual reports FY2021-FY2025",
+    "roic": "synthetic FY2025 NOPAT / invested capital",
+    "high_growth_years": "judgment: platform switching costs, no stated contract end"
+  }
+}
