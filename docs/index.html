@@ -176,7 +176,7 @@ function jsonp(url, varName){
     s.src=url;
     let done=false;
     const clean=()=>{ if(s.parentNode) s.parentNode.removeChild(s); };
-    const to=setTimeout(()=>{ if(!done){done=true; clean(); reject(new Error("接口超时"));} },10000);
+    const to=setTimeout(()=>{ if(!done){done=true; clean(); reject(new Error("接口超时"));} },20000);
     s.onload=()=>{ if(done) return; done=true; clearTimeout(to);
       const v=window[varName]; clean();
       resolve((typeof v==="string")? v : null); };
@@ -186,11 +186,20 @@ function jsonp(url, varName){
 }
 
 async function fetchQuote(code){
-  const raw = await jsonp("https://qt.gtimg.cn/q="+code, "v_"+code);
-  if(!raw) throw new Error("无行情数据");
-  const f = raw.replace(/^v_\w+="/,"").replace(/"\s*;?\s*$/,"").split("~");
-  if(f.length < 45) throw new Error("行情数据不完整");
-  return f;
+  let lastErr;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      const raw = await jsonp("https://qt.gtimg.cn/q="+code, "v_"+code);
+      if(!raw) throw new Error("无行情数据（接口未返回）");
+      const f = raw.replace(/^v_\w+="/,"").replace(/"\s*;?\s*$/,"").split("~");
+      if(f.length < 45) throw new Error("行情数据不完整");
+      return f;
+    }catch(e){
+      lastErr = e;
+      if(attempt < 2) await new Promise(r=>setTimeout(r,1200));
+    }
+  }
+  throw lastErr || new Error("接口加载失败");
 }
 // 本地名称检索（内置全 A 股代码-名称表，不依赖外部联想接口）
 function searchByName(q){
@@ -232,7 +241,10 @@ function impliedDuration(P0,E0,WACC,gt,g){
 
 // ---------- 渲染 ----------
 function renderLoading(){ out.innerHTML = '<div class="card"><div class="loading"><div class="spin"></div>正在拉取行情并计算…</div></div>'; }
-function renderError(msg){ out.innerHTML = '<div class="card"><div class="err">⚠️ '+msg+'<br><br>请检查网络后重试，或直接输入 6 位股票代码（如 600141）。</div></div>'; }
+function renderError(msg){ out.innerHTML = '<div class="card"><div class="err">⚠️ '+msg+
+  '<br><br>排查：①手机需联网；②微信内打开可能拦截行情脚本，请用手机自带浏览器（Safari / Chrome）打开本页；③点下方按钮重试。'+
+  '<br><br><button class="retry-btn" onclick="__retry()">重试</button></div></div>'; }
+function __retry(){ if(window.__lastQ) loadAndRender(window.__lastQ); else document.querySelector("#go").click(); }
 
 function render(f){
   const p = {...state.params};
@@ -450,6 +462,7 @@ async function run(raw){
 }
 
 async function loadAndRender(code){
+  window.__lastQ = code;
   const f = await fetchQuote(code);
   window.__peTTM = +f[I.peTTM];
   const box = $("#q"); if(box) box.value = code.replace(/^[a-z]{2}/,"");
