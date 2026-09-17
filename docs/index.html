@@ -360,6 +360,18 @@ function render(f){
   const gatesHtml = gates.map(g=>`
     <div class="gate"><div class="gq">${g[0]}<div class="gd">${g[1]}</div></div><span class="pill ${g[2]}">${g[3]}</span></div>`).join("");
 
+  // ---- 简化 DCF：三情景内在价值（EPS 基数，复用同一个 pv 模型）----
+  // 与第二层反向 DCF 同一个 Gordon 模型，只是这里正着算：给定增速求每股价值。
+  let ivBear=null, ivBase=null, ivBull=null, ivWeighted=null, ivGapPct=null;
+  if(eps>0 && p.wacc>p.gt){
+    const a=pv(p.gBear,eps,p.wacc,p.gt,p.n), b=pv(p.gBase,eps,p.wacc,p.gt,p.n), c=pv(p.gBull,eps,p.wacc,p.gt,p.n);
+    if(isFinite(a)&&isFinite(b)&&isFinite(c)&&b>0){
+      ivBear=a; ivBase=b; ivBull=c;
+      ivWeighted=0.25*a+0.5*b+0.25*c;
+      ivGapPct=(price-b)/b*100;
+    }
+  }
+
   // ---- 组装 ----
   const advOpen = state.advancedOpen ? "open" : "";
   out.innerHTML = `
@@ -367,6 +379,12 @@ function render(f){
   <div class="card" style="border-left:5px solid var(--accent)">
     <div style="font-size:11px;color:var(--muted);letter-spacing:3px;margin-bottom:6px">估值结论</div>
     <div style="font-size:20px;font-weight:800;line-height:1.35;margin-bottom:12px">${topVerdict}</div>
+    ${ivBase!=null?`
+    <div style="background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:5px">简化 DCF 速算（EPS 基数 · 现行参数 · 非严谨估值）</div>
+      <div style="font-size:20px;font-weight:800;color:${ivGapPct>0?'var(--up)':'var(--down)'}">中性 ${f2(ivBase)} 元　${ivGapPct>0?'现价贵 '+f2(ivGapPct)+'%':'现价低 '+f2(Math.abs(ivGapPct))+'%'}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">悲观 ${f2(ivBear)} ｜ 中性 ${f2(ivBase)} ｜ 乐观 ${f2(ivBull)} ｜ 加权 ${f2(ivWeighted)} 元/股</div>
+    </div>`:""}
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       <span class="pill ${topVcls}">现价 ${f2(price)}</span>
       <span class="pill ${clsCls}">${clsLabel}</span>
