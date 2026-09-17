@@ -481,7 +481,9 @@ function render(f){
   </div>
 
   <div class="card">
-    <button class="btn-line" id="exportBtn">导出 case.json（供 dcf-sherry 命令行深度分析）</button>
+    <button class="btn-line" id="importBtn">导入 case.json（skill 同款引擎 · 结果完全一致）</button>
+    <input type="file" id="caseFile" accept=".json,application/json" style="display:none">
+    <div class="hint" style="margin-top:8px">选 dcf-sherry 的 case.json（含营收 7 年预测、EBIT 利润率、Capex%、股数、净债桥）。本页用与 skill <b>逐位相同</b>的 FCFF 引擎复算，输出一致。</div>
   </div>
 
   <div class="disclaimer">
@@ -495,7 +497,10 @@ function render(f){
     const k=inp.dataset.k; let v=parseFloat(inp.value); if(isNaN(v)) return;
     if(k==="n") v=Math.max(1,Math.round(v)); state.params[k]=v; render(f);
   });
-  $("#exportBtn").onclick=()=>exportJSON({f,price,peTTM,pb,mktCap,eps,name,code});
+  $("#importBtn").onclick=()=>{ const el=$("#caseFile"); if(el) el.click(); };
+  const cf=$("#caseFile");
+  if(cf) cf.onchange=()=>{ const file=cf.files&&cf.files[0]; if(!file) return;
+    const rd=new FileReader(); rd.onload=()=>{ importCase(String(rd.result)); cf.value=""; }; rd.readAsText(file,"utf-8"); };
 }
 
 // 表格单元格辅助
@@ -506,23 +511,70 @@ function currentPE(g){ const peTTM=window.__peTTM; return peTTM>0?peTTM/(1+g):nu
 window.__peTTM=0;
 
 // ---------- 导出 ----------
-function exportJSON(d){
-  const p={...state.params};
-  const obj={
-    case_id:d.code||"manual", name:d.name, generated_at:new Date().toISOString().slice(0,10),
-    source:"dcf-sherry-web (triage)",
-    quote:{price:d.price, pe_ttm:d.peTTM, pb:d.pb, market_cap_yi:d.mktCap, eps_ttm:d.eps},
-    assumptions:{wacc:p.wacc, terminal_growth:p.gt, growth_duration_years:p.n,
-      reinvest_rate:p.reinvest, roic:p.roic, forward_growth:{bear:p.gBear,base:p.gBase,bull:p.gBull},
-      growth_type:state.growthType},
-    note:"自动生成的粗筛快照。Q3-Q5(现金转化/负债/稀释)缺财报，请用 dcf-sherry 命令行 run 子命令跑完整闸门。",
-    repo:"https://github.com/SherryCW/dcf-sherry"
-  };
-  const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob); a.download=(d.code||"dcf-sherry")+"-case.json";
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(a.href);
+// ---------- 与 skill 逐位一致的 FCFF 引擎（scenario_dcf / run_case 的 JS 复刻）----------
+// 逐字对照 scripts/dcf_cli.py 的算法，确保同一份 case.json 输出完全一致。
+function dcfScenario(c, name){
+  const sc=c.scenarios[name];
+  const rate=Number(sc.wacc), growth=Number(sc.terminal_growth);
+  if(!(rate>growth)) throw new Error(name+" 情景不满足 WACC > 永续增速");
+  let prevNwc=Number(sc.opening_nwc), pvExplicit=0, lastFcff=0, lastDf=1;
+  for(let i=0;i<sc.revenue.length;i++){
+    const year=i+1, revenue=Number(sc.revenue[i]);
+    const ebit=revenue*Number(sc.ebit_margin[i]);
+    const nopat=ebit*(1-Number(sc.tax_rate[i]));
+    const dep=revenue*Number(sc.da_pct_revenue[i]);
+    const capex=revenue*Number(sc.capex_pct_revenue[i]);
+    const nwc=revenue*Number(sc.nwc_pct_revenue[i]);
+    const fcff=nopat+dep-capex-(nwc-prevNwc);
+    const df=Math.pow(1+rate, year);
+    pvExplicit+=fcff/df;
+    lastFcff=fcff; lastDf=df; prevNwc=nwc;
+  }
+  const terminalFcff=lastFcff*(1+growth);
+  const terminalValue=terminalFcff/(rate-growth);
+  const pvTerminal=terminalValue/lastDf;
+  const ev=pvExplicit+pvTerminal;
+  const br=c.bridge;
+  const equity=ev-Number(br.net_debt)-Number(br.minority_interest)+Number(br.non_operating_investments);
+  return {scenario:name, probability:Number(sc.probability), wacc:rate, terminal_growth:growth,
+    enterprise_value:ev, equity_value:equity, value_per_share:equity/Number(br.diluted_shares),
+    terminal_value_share: ev?pvTerminal/ev:NaN};
+}
+function dcfRun(c){
+  if(!c||!c.scenarios||!c.bridge) throw new Error("不是有效的 dcf-sherry case.json（缺 scenarios 或 bridge）");
+  const names=["bear","base","bull"], sc={};
+  for(const n of names){ if(!c.scenarios[n]) throw new Error("缺 "+n+" 情景"); sc[n]=dcfScenario(c,n); }
+  const weighted=names.reduce((s,n)=>s+sc[n].probability*sc[n].value_per_share,0);
+  const maxTv=Math.max(...names.map(n=>sc[n].terminal_value_share));
+  const warnings=[];
+  if(maxTv>0.80) warnings.push("终值占企业价值超过 80%（强久期依赖）");
+  return {scenarios:sc, probability_weighted_value_per_share:weighted, warnings, case_id:c.case_id, company:c.company_name};
+}
+let deepCase=null, deepResult=null;
+function importCase(text){
+  try{
+    const c=JSON.parse(text);
+    const r=dcfRun(c);
+    deepCase=c; deepResult=r;
+    renderDeep();
+  }catch(e){ renderError("case.json 导入失败："+(e.message||e)); }
+}
+function renderDeep(){
+  const r=deepResult, c=deepCase; if(!r) return;
+  const price=(window.__lastF && +window.__lastF[I.price]) || null;
+  const w=r.probability_weighted_value_per_share;
+  const gap=price? (price-w)/w*100 : null;
+  const nm=n=>`<div class="kv"><span class="k">${n[0]}</span><span class="v">${f2(r.scenarios[n[1]].value_per_share)} 元</span></div>`;
+  const card=`<div class="card" style="border-left:5px solid var(--accent)">
+    <div style="font-size:11px;color:var(--muted);letter-spacing:3px;margin-bottom:6px">深度估值 · 与 skill 逐位一致</div>
+    <div class="name-big" style="font-size:19px">${esc(c.company_name||c.case_id||"case")}</div>
+    ${price!=null?`<div style="font-size:20px;font-weight:800;color:${gap>0?'var(--up)':'var(--down)'};margin:10px 0 12px">概率加权 ${f2(w)} 元　现价 ${f2(price)} → ${gap>0?'贵 '+f2(gap)+'%':'低 '+f2(Math.abs(gap))+'%'}</div>`:`<div style="font-size:20px;font-weight:800;margin:10px 0 12px">概率加权 ${f2(w)} 元</div>`}
+    ${nm(["悲观","bear"])}${nm(["中性","base"])}${nm(["乐观","bull"])}
+    <div class="kv"><span class="k">概率加权</span><span class="v">${f2(w)} 元</span></div>
+    ${r.warnings.length?`<div style="font-size:12px;color:var(--up);margin-top:8px">⚠ ${r.warnings.join("；")}</div>`:""}
+    <div class="hint" style="margin-top:8px">由导入的 case.json 直接算出，与 dcf-sherry 命令行 run 输出逐位相同（同一 FCFF 模型）。</div>
+  </div>`;
+  out.innerHTML = card + out.innerHTML;
 }
 
 // ---------- 主流程 ----------
